@@ -1,107 +1,74 @@
-repeat task.wait() until game.Players.LocalPlayer
-local plr = game.Players.LocalPlayer
+local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
+local player = Players.LocalPlayer
 
-local THEME_COLOR = Color3.fromRGB(255,140,0)
-local THEME_BG = Color3.fromRGB(15,15,18)
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "AllowFriends"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = game:GetService("CoreGui")
 
-local gui = Instance.new("ScreenGui", plr.PlayerGui)
-gui.Name = "VAEBUpdate"
-gui.ResetOnSpawn = false
+local button = Instance.new("TextButton")
+button.Name = "DraggableButton"
+button.Size = UDim2.fromOffset(140, 50)
+button.Position = UDim2.fromOffset(200, 200)  -- Starting position
+button.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
+button.BorderSizePixel = 0
+button.Text = "Allow Friends"
+button.TextColor3 = Color3.fromRGB(255, 255, 255)
+button.Font = Enum.Font.GothamBold
+button.TextSize = 18
+button.Parent = screenGui
 
-local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0,260,0,150)
-frame.Position = UDim2.new(0.5,-130,0.3,0)
-frame.BackgroundColor3 = THEME_BG
-frame.BorderSizePixel = 0
-Instance.new("UICorner", frame).CornerRadius = UDim.new(0,16)
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 12)
+corner.Parent = button
 
-local stroke = Instance.new("UIStroke", frame)
-stroke.Color = THEME_COLOR
-stroke.Transparency = 0.4
-
-local header = Instance.new("TextLabel", frame)
-header.Size = UDim2.new(1,0,0,36)
-header.BackgroundTransparency = 1
-header.Text = "VAEB invisible"
-header.Font = Enum.Font.GothamBold
-header.TextSize = 18
-header.TextColor3 = THEME_COLOR
-
-local updateText = Instance.new("TextLabel", frame)
-updateText.Size = UDim2.new(1,-20,0,30)
-updateText.Position = UDim2.new(0,10,0,45)
-updateText.BackgroundTransparency = 1
-updateText.Text = "SCRIPT ON UPDATE"
-updateText.Font = Enum.Font.GothamBold
-updateText.TextSize = 16
-updateText.TextColor3 = THEME_COLOR
-
-local infoText = Instance.new("TextLabel", frame)
-infoText.Size = UDim2.new(1,-20,0,20)
-infoText.Position = UDim2.new(0,10,0,75)
-infoText.BackgroundTransparency = 1
-infoText.Text = "More information in discord"
-infoText.Font = Enum.Font.Gotham
-infoText.TextSize = 14
-infoText.TextColor3 = Color3.fromRGB(180,180,180)
-
-local copyBtn = Instance.new("TextButton", frame)
-copyBtn.Size = UDim2.new(1,-40,0,36)
-copyBtn.Position = UDim2.new(0,20,1,-46)
-copyBtn.Text = "COPY LINK"
-copyBtn.Font = Enum.Font.GothamBold
-copyBtn.TextSize = 15
-copyBtn.TextColor3 = Color3.fromRGB(20,20,20)
-copyBtn.BackgroundColor3 = THEME_COLOR
-copyBtn.BorderSizePixel = 0
-Instance.new("UICorner", copyBtn).CornerRadius = UDim.new(0,12)
-
-copyBtn.MouseButton1Click:Connect(function()
-    if setclipboard then
-        setclipboard("https://discord.gg/KHVC7vFs")
-        copyBtn.Text = "COPIED!"
-        task.wait(1.2)
-        copyBtn.Text = "COPY LINK"
-    end
-end)
+local stroke = Instance.new("UIStroke")
+stroke.Color = Color3.fromRGB(0, 125, 255)
+stroke.Thickness = 1.5
+stroke.Transparency = 0.3
+stroke.Parent = button
 
 local dragging = false
-local dragStart
-local startPos
-local dragInput
+local dragStart = nil
+local startPos = nil
 
-local function update(input)
-    local delta = input.Position - dragStart
-    frame.Position = UDim2.new(
-        startPos.X.Scale, startPos.X.Offset + delta.X,
-        startPos.Y.Scale, startPos.Y.Offset + delta.Y
-    )
+local function updateInput(input)
+    if dragging then
+        local delta = input.Position - dragStart
+        button.Position = UDim2.new(
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
+        )
+    end
 end
 
-header.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1
-    or input.UserInputType == Enum.UserInputType.Touch then
+button.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragging = true
         dragStart = input.Position
-        startPos = frame.Position
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-            end
-        end)
+        startPos = button.Position
     end
 end)
 
-header.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement
-    or input.UserInputType == Enum.UserInputType.Touch then
-        dragInput = input
+button.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = false
     end
 end)
 
 UserInputService.InputChanged:Connect(function(input)
-    if dragging and input == dragInput then
-        update(input)
+    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        updateInput(input)
     end
+end)
+
+button.MouseButton1Click:Connect(function()
+    game:GetService("ReplicatedStorage"):WaitForChild("Packages"):WaitForChild("Net"):WaitForChild("RE/PlotService/ToggleFriends"):FireServer() -- ez remote
+end)
+
+button.TouchTap:Connect(function()
+    game:GetService("ReplicatedStorage"):WaitForChild("Packages"):WaitForChild("Net"):WaitForChild("RE/PlotService/ToggleFriends"):FireServer() -- ez remote
 end)
